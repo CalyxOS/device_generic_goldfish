@@ -1,7 +1,7 @@
 # Rules to generate a zip file that contains google emulator images
 # and other files for distribution
 
-ifneq ($(filter sdk_% gcar_%, $(TARGET_PRODUCT)),)
+ifneq ($(filter calyx_sdk_% sdk_% gcar_%, $(TARGET_PRODUCT)),)
 target_notice_file_txt := $(TARGET_OUT_INTERMEDIATES)/NOTICE.txt
 
 emulator_img_source_prop := $(TARGET_OUT_INTERMEDIATES)/source.properties
@@ -38,7 +38,11 @@ endif
 
 INTERNAL_EMULATOR_PACKAGE_SOURCE := $(PRODUCT_OUT)/emulator
 INTERNAL_EMULATOR_PACKAGE_SOURCE_DST := $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)
+ifeq ($(CALYX_BUILD),)
 INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/sdk-repo-linux-system-images.zip
+else
+INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/calyxos-emulator-system-images-$(TARGET_ARCH).zip
+endif
 
 INSTALLED_QEMU_SYSTEMIMAGE := $(PRODUCT_OUT)/system-qemu.img
 INSTALLED_QEMU_RAMDISKIMAGE := $(PRODUCT_OUT)/ramdisk-qemu.img
