@@ -2,7 +2,7 @@
 # and other files for distribution
 
 ifeq ($(filter $(TARGET_PRODUCT), qemu_trusty_arm64),)
-ifeq ($(filter $(MAKECMDGOALS), sdk win_sdk sdk_repo goog_emu_imgs),)
+ifeq ($(filter $(MAKECMDGOALS), sdk win_sdk sdk_repo goog_emu_imgs calyx_emu_imgs),)
 emulator_img_source_prop := $(TARGET_OUT_INTERMEDIATES)/source.properties
 target_notice_file_txt := $(TARGET_OUT_INTERMEDIATES)/NOTICE.txt
 $(emulator_img_source_prop): $(PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP)
@@ -68,8 +68,11 @@ ifneq ($(filter $(PRODUCT_DEVICE), emulator_car64_arm64 emulator_car64_x86_64),)
 INTERNAL_EMULATOR_PACKAGE_FILES += hardware/interfaces/automotive/vehicle/aidl/emu_metadata/android.hardware.automotive.vehicle-types-meta.json
 endif
 
+ifeq ($(CALYX_BUILD),)
 name := sdk-repo-linux-system-images
-
+else
+name := calyxos-emulator-system-images-$(TARGET_ARCH)
+endif
 
 INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
