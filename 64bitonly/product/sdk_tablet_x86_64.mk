@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 The Android Open Source Project
+# Copyright (C) 2023 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,29 +16,74 @@
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 EMULATOR_DISABLE_RADIO := true
 
+# 1.5G + 8M
+BOARD_SUPER_PARTITION_SIZE := 1619001344
+BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE := 1610612736
+
+
 PRODUCT_COPY_FILES += \
+    device/generic/goldfish/tablet/data/etc/display_settings.xml:$(TARGET_COPY_OUT_VENDOR)/etc/display_settings.xml \
     device/generic/goldfish/data/etc/advancedFeatures.ini.tablet:advancedFeatures.ini \
     device/generic/goldfish/data/etc/config.ini.nexus7tab:config.ini
 
+PRODUCT_COPY_FILES+= \
+        device/generic/goldfish/data/etc/tablet_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/handheld_core_hardware.xml
+
+PRODUCT_COPY_FILES += device/generic/goldfish/tablet/data/etc/tablet.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/tablet.xml
+
 PRODUCT_CHARACTERISTICS := tablet,nosdcard
+
 
 #
 # All components inherited here go to system image
 #
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/generic_no_telephony.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
 
 # Enable mainline checking for excat this product name
-ifeq (sdk_tablet_x86_64,$(TARGET_PRODUCT))
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
-endif
+
+
+#
+# All components inherited here go to system_ext image
+#
+$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_system_ext.mk)
 
 #
 # All components inherited here go to product image
 #
+# Includes all AOSP product packages
+$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_product.mk)
+
+# Default AOSP sounds
+$(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)
+
+# Additional settings used in all AOSP builds
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.config.ringtone?=Ring_Synth_04.ogg \
+    ro.config.notification_sound?=pixiedust.ogg \
+
+
+# More AOSP packages
+PRODUCT_PACKAGES += \
+    initial-package-stopped-states-aosp.xml \
+    PhotoTable \
+    preinstalled-packages-platform-aosp-product.xml \
+    WallpaperPicker \
+
+
+# Window Extensions
+$(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
+
+# Other packages for virtual device testing.
+PRODUCT_PACKAGES += \
+    LargeScreenSettingsProviderOverlay \
+    curl \
+
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += system/bin/curl
 
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
-    development/sys-img/images_x86_64_source.prop_template
+    device/generic/goldfish/64bitonly/product/tablet_images_x86_64_source.prop_template
 
 #
 # All components inherited here go to vendor image
@@ -47,9 +92,9 @@ $(call inherit-product, device/generic/goldfish/64bitonly/product/x86_64-vendor.
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
 $(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
 
-
 # Overrides
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_tablet_x86_64
-PRODUCT_DEVICE := emulator64_x86_64
-PRODUCT_MODEL := Android SDK built for x86_64
+PRODUCT_DEVICE := emu64x
+PRODUCT_MODEL := Android SDK Tablet for x86_64
+

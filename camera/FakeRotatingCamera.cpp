@@ -61,6 +61,8 @@ constexpr int kMedFPS = 15;
 constexpr int kMaxFPS = 30;
 constexpr int64_t kOneSecondNs = 1000000000;
 
+constexpr float kDefaultFocalLength = 2.8;
+
 constexpr int64_t kMinFrameDurationNs = kOneSecondNs / kMaxFPS;
 constexpr int64_t kMaxFrameDurationNs = kOneSecondNs / kMinFPS;
 constexpr int64_t kDefaultFrameDurationNs = kOneSecondNs / kMedFPS;
@@ -432,7 +434,7 @@ void FakeRotatingCamera::closeImpl(const bool everything) {
     }
 }
 
-std::tuple<int64_t, CameraMetadata,
+std::tuple<int64_t, int64_t, CameraMetadata,
            std::vector<StreamBuffer>, std::vector<DelayedStreamBuffer>>
 FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
                                           Span<CachedStreamBuffer*> csbs) {
@@ -494,7 +496,7 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
         }
     }
 
-    return make_tuple(mFrameDurationNs,
+    return make_tuple(mFrameDurationNs, kDefaultSensorExposureTimeNs,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 
@@ -505,7 +507,7 @@ fail:
         outputBuffers.push_back(csb->finish(false));
     }
 
-    return make_tuple(FAILURE(-1),
+    return make_tuple(FAILURE(-1), 0,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 }
@@ -806,20 +808,20 @@ CameraMetadata FakeRotatingCamera::applyMetadata(const CameraMetadata& metadata)
 
     CameraMetadataMap m = parseCameraMetadataMap(metadata);
 
-    m[ANDROID_CONTROL_AE_STATE] = ANDROID_CONTROL_AE_STATE_CONVERGED;
-    m[ANDROID_CONTROL_AF_STATE] = af.first;
-    m[ANDROID_CONTROL_AWB_STATE] = ANDROID_CONTROL_AWB_STATE_CONVERGED;
-    m[ANDROID_FLASH_STATE] = ANDROID_FLASH_STATE_UNAVAILABLE;
+    m[ANDROID_CONTROL_AE_STATE] = uint8_t(ANDROID_CONTROL_AE_STATE_CONVERGED);
+    m[ANDROID_CONTROL_AF_STATE] = uint8_t(af.first);
+    m[ANDROID_CONTROL_AWB_STATE] = uint8_t(ANDROID_CONTROL_AWB_STATE_CONVERGED);
+    m[ANDROID_FLASH_STATE] = uint8_t(ANDROID_FLASH_STATE_UNAVAILABLE);
     m[ANDROID_LENS_APERTURE] = getDefaultAperture();
     m[ANDROID_LENS_FOCUS_DISTANCE] = af.second;
-    m[ANDROID_LENS_STATE] = ANDROID_LENS_STATE_STATIONARY;
+    m[ANDROID_LENS_STATE] = uint8_t(ANDROID_LENS_STATE_STATIONARY);
     m[ANDROID_REQUEST_PIPELINE_DEPTH] = uint8_t(4);
     m[ANDROID_SENSOR_FRAME_DURATION] = mFrameDurationNs;
     m[ANDROID_SENSOR_EXPOSURE_TIME] = kDefaultSensorExposureTimeNs;
     m[ANDROID_SENSOR_SENSITIVITY] = getDefaultSensorSensitivity();
     m[ANDROID_SENSOR_TIMESTAMP] = int64_t(0);
     m[ANDROID_SENSOR_ROLLING_SHUTTER_SKEW] = kMinSensorExposureTimeNs;
-    m[ANDROID_STATISTICS_SCENE_FLICKER] = ANDROID_STATISTICS_SCENE_FLICKER_NONE;
+    m[ANDROID_STATISTICS_SCENE_FLICKER] = uint8_t(ANDROID_STATISTICS_SCENE_FLICKER_NONE);
 
     std::optional<CameraMetadata> maybeSerialized =
         serializeCameraMetadataMap(m);
@@ -908,6 +910,14 @@ bool FakeRotatingCamera::isBackFacing() const {
     return mIsBackFacing;
 }
 
+Span<const float> FakeRotatingCamera::getAvailableFocalLength() const {
+    static const float availableFocalLengths[] = {
+        kDefaultFocalLength
+    };
+
+    return availableFocalLengths;
+}
+
 std::tuple<int32_t, int32_t, int32_t> FakeRotatingCamera::getMaxNumOutputStreams() const {
     return {
         0,  // raw
@@ -978,7 +988,7 @@ int64_t FakeRotatingCamera::getDefaultSensorFrameDuration() const {
 }
 
 float FakeRotatingCamera::getDefaultFocalLength() const {
-    return 2.8;
+    return kDefaultFocalLength;
 }
 
 }  // namespace hw

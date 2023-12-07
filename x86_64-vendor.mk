@@ -3,39 +3,33 @@ include device/generic/goldfish/x86_64-kernel.mk
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
 
+ADVANCED_FEATURES_FILE := advancedFeatures.ini
+ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
+ADVANCED_FEATURES_FILE := advancedFeatures.ini.minigbm
+endif
+
 # This is a build configuration for a full-featured build of the
 # Open-Source part of the tree. It's geared toward a US-centric
 # build quite specifically for the emulator, and might not be
 # entirely appropriate to inherit from for on-device configurations.
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.xl:config.ini \
-    device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
+	device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu
 
 PRODUCT_SDK_ADDON_COPY_FILES += \
-    device/generic/goldfish/data/etc/advancedFeatures.ini:images/x86_64/advancedFeatures.ini \
+    device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):images/x86_64/advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:images/x86_64/encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):images/x86_64/kernel-ranchu
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/configs/gpu.config:data/misc/gceconfigs/gpu.config
 
-# a hack to reduce presubmit time where CTS tries to install media files one by one
-# taking more than 30 minutes; following is just the list of files needed by current
-# tests on presubmit
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/media/test/swirl_136x144_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_136x144_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_132x130_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_132x130_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_130x132_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_130x132_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_144x136_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_144x136_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_128x128_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_128x128_mpeg4.mp4
-
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.crypto.dm_default_key.options_format.version=2
 
-PRODUCT_SHIPPING_API_LEVEL := 33
-PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
+PRODUCT_SHIPPING_API_LEVEL := 34
 TARGET_USES_MKE2FS := true
 
 PRODUCT_COPY_FILES += \

@@ -174,7 +174,7 @@ void QemuCamera::close() {
     }
 }
 
-std::tuple<int64_t, CameraMetadata,
+std::tuple<int64_t, int64_t, CameraMetadata,
            std::vector<StreamBuffer>, std::vector<DelayedStreamBuffer>>
 QemuCamera::processCaptureRequest(CameraMetadata metadataUpdate,
                                   Span<CachedStreamBuffer*> csbs) {
@@ -211,6 +211,7 @@ QemuCamera::processCaptureRequest(CameraMetadata metadataUpdate,
     }
 
     return make_tuple((mQemuChannel.ok() ? mFrameDurationNs : FAILURE(-1)),
+                      mSensorExposureDurationNs,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 }
@@ -429,20 +430,20 @@ CameraMetadata QemuCamera::applyMetadata(const CameraMetadata& metadata) {
 
     CameraMetadataMap m = parseCameraMetadataMap(metadata);
 
-    m[ANDROID_CONTROL_AE_STATE] = ANDROID_CONTROL_AE_STATE_CONVERGED;
-    m[ANDROID_CONTROL_AF_STATE] = af.first;
-    m[ANDROID_CONTROL_AWB_STATE] = ANDROID_CONTROL_AWB_STATE_CONVERGED;
-    m[ANDROID_FLASH_STATE] = ANDROID_FLASH_STATE_UNAVAILABLE;
+    m[ANDROID_CONTROL_AE_STATE] = uint8_t(ANDROID_CONTROL_AE_STATE_CONVERGED);
+    m[ANDROID_CONTROL_AF_STATE] = uint8_t(af.first);
+    m[ANDROID_CONTROL_AWB_STATE] = uint8_t(ANDROID_CONTROL_AWB_STATE_CONVERGED);
+    m[ANDROID_FLASH_STATE] = uint8_t(ANDROID_FLASH_STATE_UNAVAILABLE);
     m[ANDROID_LENS_APERTURE] = mAperture;
     m[ANDROID_LENS_FOCUS_DISTANCE] = af.second;
-    m[ANDROID_LENS_STATE] = ANDROID_LENS_STATE_STATIONARY;
+    m[ANDROID_LENS_STATE] = uint8_t(ANDROID_LENS_STATE_STATIONARY);
     m[ANDROID_REQUEST_PIPELINE_DEPTH] = uint8_t(4);
     m[ANDROID_SENSOR_FRAME_DURATION] = mFrameDurationNs;
     m[ANDROID_SENSOR_EXPOSURE_TIME] = mSensorExposureDurationNs;
     m[ANDROID_SENSOR_SENSITIVITY] = mSensorSensitivity;
     m[ANDROID_SENSOR_TIMESTAMP] = int64_t(0);
     m[ANDROID_SENSOR_ROLLING_SHUTTER_SKEW] = kMinSensorExposureTimeNs;
-    m[ANDROID_STATISTICS_SCENE_FLICKER] = ANDROID_STATISTICS_SCENE_FLICKER_NONE;
+    m[ANDROID_STATISTICS_SCENE_FLICKER] = uint8_t(ANDROID_STATISTICS_SCENE_FLICKER_NONE);
 
     std::optional<CameraMetadata> maybeSerialized =
         serializeCameraMetadataMap(m);

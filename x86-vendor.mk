@@ -1,5 +1,9 @@
 include device/generic/goldfish/x86_64-kernel.mk
 
+ADVANCED_FEATURES_FILE := advancedFeatures.ini
+ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
+ADVANCED_FEATURES_FILE := advancedFeatures.ini.minigbm
+endif
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib/libgoldfish-ril.so
 
@@ -9,20 +13,19 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # entirely appropriate to inherit from for on-device configurations.
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.xl:config.ini \
-    device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
+    device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu-64
 
 PRODUCT_SDK_ADDON_COPY_FILES += \
-    device/generic/goldfish/data/etc/advancedFeatures.ini:images/x86/advancedFeatures.ini \
+    device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):images/x86/advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:images/x86/encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):images/x86/kernel-ranchu-64
 
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.crypto.dm_default_key.options_format.version=2
 
-PRODUCT_SHIPPING_API_LEVEL := 33
-PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
+PRODUCT_SHIPPING_API_LEVEL := 34
 TARGET_USES_MKE2FS := true
 
 PRODUCT_COPY_FILES += \

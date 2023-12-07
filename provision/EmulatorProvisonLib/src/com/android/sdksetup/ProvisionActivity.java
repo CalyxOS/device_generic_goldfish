@@ -149,6 +149,25 @@ public abstract class ProvisionActivity extends Activity {
         } else if (!displaySettingsName.isEmpty()) {
             Log.e(TAG(), "Unexpected value `" + displaySettingsName + "` in " + displaySettingsProp);
         }
+        final String autoRotateProp = "ro.boot.qemu.autorotate";
+        final String autoRotateSetting = SystemProperties.get(autoRotateProp);
+        if (!autoRotateSetting.isEmpty()) {
+            Settings.System.putString(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, autoRotateSetting);
+        }
+    }
+
+    // required for CTS which uses the mock modem
+    private void provisionMockModem() {
+        String value = SystemProperties.get("ro.boot.radio.allow_mock_modem");
+        if (!value.isEmpty()) {
+            if (value.equals("1")) {
+                value = "true";
+            } else if (value.equals("0")) {
+                value = "false";
+            }
+
+            SystemProperties.set("persist.radio.allow_mock_modem", value);
+        }
     }
 
     protected void provisionTelephony() {
@@ -156,6 +175,8 @@ public abstract class ProvisionActivity extends Activity {
         // the following blocks, TODO: find out why and fix it. disable this for now.
         // TelephonyManager mTelephony = getApplicationContext().getSystemService(TelephonyManager.class);
         // mTelephony.setPreferredNetworkTypeBitmask(TelephonyManager.NETWORK_TYPE_BITMASK_NR);
+
+        provisionMockModem();
     }
 
     protected void provisionLocation() {

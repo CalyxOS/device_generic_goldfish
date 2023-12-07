@@ -16,7 +16,6 @@
 
 #define FAILURE_DEBUG_PREFIX "CameraDevice"
 
-#include <charconv>
 #include <string_view>
 
 #include <system/camera_metadata.h>
@@ -32,8 +31,6 @@ namespace camera {
 namespace provider {
 namespace implementation {
 namespace {
-constexpr char kCameraIdPrefix[] = "device@1.0/internal/";
-
 const uint32_t kExtraResultKeys[] = {
     ANDROID_CONTROL_AE_STATE,
     ANDROID_CONTROL_AF_STATE,
@@ -92,7 +89,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
 
     {
         m[ANDROID_COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES]
-            .add(ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF);
+            .add<uint8_t>(ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF);
     }
     {   // ANDROID_CONTROL_...
         m[ANDROID_CONTROL_AE_AVAILABLE_ANTIBANDING_MODES]
@@ -136,9 +133,9 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
             .add<int32_t>(0)    // AWB
             .add<int32_t>(0);   // AF
         m[ANDROID_CONTROL_AE_LOCK_AVAILABLE] =
-            ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE;
+            uint8_t(ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE);
         m[ANDROID_CONTROL_AWB_LOCK_AVAILABLE] =
-            ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE;
+            uint8_t(ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE);
         m[ANDROID_CONTROL_AVAILABLE_MODES]
             .add<uint8_t>(ANDROID_CONTROL_MODE_OFF)
             .add<uint8_t>(ANDROID_CONTROL_MODE_AUTO);
@@ -156,13 +153,13 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
     {   // ANDROID_FLASH_INFO_...
         const auto supportedFlashStrength = mHwCamera->getSupportedFlashStrength();
         if (supportedFlashStrength.first > 0) {
-            m[ANDROID_FLASH_INFO_AVAILABLE] = ANDROID_FLASH_INFO_AVAILABLE_TRUE;
+            m[ANDROID_FLASH_INFO_AVAILABLE] = uint8_t(ANDROID_FLASH_INFO_AVAILABLE_TRUE);
             m[ANDROID_FLASH_INFO_STRENGTH_MAXIMUM_LEVEL] =
                 int32_t(supportedFlashStrength.first);
             m[ANDROID_FLASH_INFO_STRENGTH_DEFAULT_LEVEL] =
                 int32_t(supportedFlashStrength.second);
         } else {
-            m[ANDROID_FLASH_INFO_AVAILABLE] = ANDROID_FLASH_INFO_AVAILABLE_FALSE;
+            m[ANDROID_FLASH_INFO_AVAILABLE] = uint8_t(ANDROID_FLASH_INFO_AVAILABLE_FALSE);
         }
     }
     {   // ANDROID_HOT_PIXEL_...
@@ -179,8 +176,8 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_JPEG_MAX_SIZE] = int32_t(mHwCamera->getJpegMaxSize());
     }
     {   // ANDROID_LENS_...
-        m[ANDROID_LENS_FACING] = mHwCamera->isBackFacing() ?
-            ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT;
+        m[ANDROID_LENS_FACING] = uint8_t(mHwCamera->isBackFacing() ?
+            ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT);
 
         {
             auto& v = m[ANDROID_LENS_INFO_AVAILABLE_APERTURES];
@@ -202,7 +199,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_LENS_INFO_MINIMUM_FOCUS_DISTANCE] =
             float(mHwCamera->getMinimumFocusDistance());
         m[ANDROID_LENS_INFO_FOCUS_DISTANCE_CALIBRATION] =
-            ANDROID_LENS_INFO_FOCUS_DISTANCE_CALIBRATION_APPROXIMATE;
+            uint8_t(ANDROID_LENS_INFO_FOCUS_DISTANCE_CALIBRATION_APPROXIMATE);
     }
     {   // ANDROID_NOISE_REDUCTION_...
         m[ANDROID_NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES]
@@ -218,29 +215,21 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
 
         m[ANDROID_REQUEST_MAX_NUM_INPUT_STREAMS] = int32_t(0);
-        m[ANDROID_REQUEST_PIPELINE_MAX_DEPTH] = mHwCamera->getPipelineMaxDepth();
+        m[ANDROID_REQUEST_PIPELINE_MAX_DEPTH] = uint8_t(mHwCamera->getPipelineMaxDepth());
         m[ANDROID_REQUEST_PARTIAL_RESULT_COUNT] = int32_t(1);
-        m[ANDROID_REQUEST_AVAILABLE_CAPABILITIES]
-            .add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE)
-            .add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS);
+        {
+            auto& availableCaps = m[ANDROID_REQUEST_AVAILABLE_CAPABILITIES];
+            uint32_t availableCapsBitmap =
+                mHwCamera->getAvailableCapabilitiesBitmap();
+
+            for (int i = 0; availableCapsBitmap; ++i, availableCapsBitmap >>= 1) {
+                if (availableCapsBitmap & 1) {
+                    availableCaps.add<uint8_t>(i);
+                }
+            }
+        }
     }
     {   // ANDROID_SCALER_...
-        {
-            auto& v = m[ANDROID_SCALER_AVAILABLE_FORMATS];
-            for (const auto fmt : mHwCamera->getSupportedPixelFormats()) {
-                v.add(fmt);
-            }
-        }
-        {
-            auto& jpeg = m[ANDROID_SCALER_AVAILABLE_JPEG_SIZES];
-            auto& processed = m[ANDROID_SCALER_AVAILABLE_PROCESSED_SIZES];
-
-            for (const auto sz : mHwCamera->getSupportedResolutions()) {
-                jpeg.add<int32_t>(sz.width).add<int32_t>(sz.height);
-                processed.add<int32_t>(sz.width).add<int32_t>(sz.height);
-            }
-        }
-
         m[ANDROID_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM] =
             float(mHwCamera->getMaxDigitalZoom());
 
@@ -274,7 +263,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
 
         m[ANDROID_SCALER_CROPPING_TYPE] =
-            ANDROID_SCALER_CROPPING_TYPE_CENTER_ONLY;
+            uint8_t(ANDROID_SCALER_CROPPING_TYPE_CENTER_ONLY);
     }
     {   // ANDROID_SENSOR_...
         m[ANDROID_SENSOR_ORIENTATION] =
@@ -310,7 +299,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
 
         m[ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT] =
-            ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGB;
+            uint8_t(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGB);
 
         {
             const auto exposureTimeRange = mHwCamera->getSensorExposureTimeRange();
@@ -323,7 +312,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_SENSOR_INFO_MAX_FRAME_DURATION] =
             int64_t(mHwCamera->getSensorMaxFrameDuration());
         m[ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE] =
-            ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN;  // SYSTEM_TIME_MONOTONIC
+            uint8_t(ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);  // SYSTEM_TIME_MONOTONIC
     }
     {   // ANDROID_SHADING_...
         m[ANDROID_SHADING_AVAILABLE_MODES]
@@ -340,7 +329,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
     }
     {   // ANDROID_INFO_...
         m[ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL] =
-            ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED;
+            uint8_t(ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED);
     }
     {   // ANDROID_SYNC_
         m[ANDROID_SYNC_MAX_LATENCY] = ANDROID_SYNC_MAX_LATENCY_UNKNOWN;
@@ -355,7 +344,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         const std::vector<uint32_t> keys = getSortedKeys(m);
         CameraMetadataValue& val = m[ANDROID_REQUEST_AVAILABLE_CHARACTERISTICS_KEYS];
         for (const uint32_t key : keys) {
-            val.add<uint32_t>(key);
+            val.add<int32_t>(key);
         }
     }
     {
@@ -365,7 +354,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
             const std::vector<uint32_t> keys = getSortedKeys(r);
             CameraMetadataValue& val = m[ANDROID_REQUEST_AVAILABLE_REQUEST_KEYS];
             for (const uint32_t key : keys) {
-                val.add<uint32_t>(key);
+                val.add<int32_t>(key);
             }
         }
 
@@ -377,7 +366,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
             const std::vector<uint32_t> keys = getSortedKeys(r);
             CameraMetadataValue& val = m[ANDROID_REQUEST_AVAILABLE_RESULT_KEYS];
             for (const uint32_t key : keys) {
-                val.add<uint32_t>(key);
+                val.add<int32_t>(key);
             }
         }
     }
@@ -440,34 +429,37 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
     CameraMetadataMap m;
 
     m[ANDROID_COLOR_CORRECTION_ABERRATION_MODE] =
-        ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF;
-    m[ANDROID_CONTROL_AE_ANTIBANDING_MODE] = ANDROID_CONTROL_AE_ANTIBANDING_MODE_AUTO;
+        uint8_t(ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF);
+    m[ANDROID_CONTROL_AE_ANTIBANDING_MODE] =
+        uint8_t(ANDROID_CONTROL_AE_ANTIBANDING_MODE_AUTO);
     m[ANDROID_CONTROL_AE_EXPOSURE_COMPENSATION] = int32_t(0);
-    m[ANDROID_CONTROL_AE_LOCK] = ANDROID_CONTROL_AE_LOCK_OFF;
-    m[ANDROID_CONTROL_AE_MODE] = (tpl == RequestTemplate::MANUAL) ?
-        ANDROID_CONTROL_AE_MODE_OFF : ANDROID_CONTROL_AE_MODE_ON;
+    m[ANDROID_CONTROL_AE_LOCK] = uint8_t(ANDROID_CONTROL_AE_LOCK_OFF);
+    m[ANDROID_CONTROL_AE_MODE] = uint8_t((tpl == RequestTemplate::MANUAL) ?
+        ANDROID_CONTROL_AE_MODE_OFF : ANDROID_CONTROL_AE_MODE_ON);
     m[ANDROID_CONTROL_AE_TARGET_FPS_RANGE]
         .add<int32_t>(fpsRange.first).add<int32_t>(fpsRange.second);
-    m[ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER] = ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER_IDLE;
-    m[ANDROID_CONTROL_AF_MODE] = (tpl == RequestTemplate::MANUAL) ?
-        ANDROID_CONTROL_AF_MODE_OFF : ANDROID_CONTROL_AF_MODE_AUTO;
-    m[ANDROID_CONTROL_AF_TRIGGER] = ANDROID_CONTROL_AF_TRIGGER_IDLE;
-    m[ANDROID_CONTROL_AWB_LOCK] = ANDROID_CONTROL_AWB_LOCK_OFF;
-    m[ANDROID_CONTROL_AWB_MODE] = (tpl == RequestTemplate::MANUAL) ?
-        ANDROID_CONTROL_AWB_MODE_OFF : ANDROID_CONTROL_AWB_MODE_AUTO;
-    m[ANDROID_CONTROL_CAPTURE_INTENT] = MapRequestTemplateToIntent(tpl);
-    m[ANDROID_CONTROL_EFFECT_MODE] = ANDROID_CONTROL_EFFECT_MODE_OFF;
-    m[ANDROID_CONTROL_MODE] = (tpl == RequestTemplate::MANUAL) ?
-        ANDROID_CONTROL_MODE_OFF : ANDROID_CONTROL_MODE_AUTO;
-    m[ANDROID_CONTROL_SCENE_MODE] = ANDROID_CONTROL_SCENE_MODE_DISABLED;
-    m[ANDROID_CONTROL_VIDEO_STABILIZATION_MODE] = ANDROID_CONTROL_VIDEO_STABILIZATION_MODE_OFF;
+    m[ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER] =
+        uint8_t(ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
+    m[ANDROID_CONTROL_AF_MODE] = uint8_t((tpl == RequestTemplate::MANUAL) ?
+        ANDROID_CONTROL_AF_MODE_OFF : ANDROID_CONTROL_AF_MODE_AUTO);
+    m[ANDROID_CONTROL_AF_TRIGGER] = uint8_t(ANDROID_CONTROL_AF_TRIGGER_IDLE);
+    m[ANDROID_CONTROL_AWB_LOCK] = uint8_t(ANDROID_CONTROL_AWB_LOCK_OFF);
+    m[ANDROID_CONTROL_AWB_MODE] = uint8_t((tpl == RequestTemplate::MANUAL) ?
+        ANDROID_CONTROL_AWB_MODE_OFF : ANDROID_CONTROL_AWB_MODE_AUTO);
+    m[ANDROID_CONTROL_CAPTURE_INTENT] = uint8_t(MapRequestTemplateToIntent(tpl));
+    m[ANDROID_CONTROL_EFFECT_MODE] = uint8_t(ANDROID_CONTROL_EFFECT_MODE_OFF);
+    m[ANDROID_CONTROL_MODE] = uint8_t((tpl == RequestTemplate::MANUAL) ?
+        ANDROID_CONTROL_MODE_OFF : ANDROID_CONTROL_MODE_AUTO);
+    m[ANDROID_CONTROL_SCENE_MODE] = uint8_t(ANDROID_CONTROL_SCENE_MODE_DISABLED);
+    m[ANDROID_CONTROL_VIDEO_STABILIZATION_MODE] =
+        uint8_t(ANDROID_CONTROL_VIDEO_STABILIZATION_MODE_OFF);
     m[ANDROID_CONTROL_ZOOM_RATIO] = float(mHwCamera->getZoomRatioRange().first);
 
-    m[ANDROID_EDGE_MODE] = ANDROID_EDGE_MODE_OFF;
+    m[ANDROID_EDGE_MODE] = uint8_t(ANDROID_EDGE_MODE_OFF);
 
-    m[ANDROID_FLASH_MODE] = ANDROID_FLASH_MODE_OFF;
+    m[ANDROID_FLASH_MODE] = uint8_t(ANDROID_FLASH_MODE_OFF);
 
-    m[ANDROID_HOT_PIXEL_MODE] = ANDROID_HOT_PIXEL_MODE_OFF;
+    m[ANDROID_HOT_PIXEL_MODE] = uint8_t(ANDROID_HOT_PIXEL_MODE_OFF);
 
     m[ANDROID_JPEG_ORIENTATION] = int32_t(0);
     m[ANDROID_JPEG_QUALITY] = uint8_t(85);
@@ -478,16 +470,14 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
     m[ANDROID_LENS_FOCAL_LENGTH] = float(mHwCamera->getDefaultFocalLength());
     m[ANDROID_LENS_FOCUS_DISTANCE] = float(mHwCamera->getMinimumFocusDistance());
     m[ANDROID_LENS_OPTICAL_STABILIZATION_MODE] =
-        ANDROID_LENS_OPTICAL_STABILIZATION_MODE_OFF;
+        uint8_t(ANDROID_LENS_OPTICAL_STABILIZATION_MODE_OFF);
 
-    m[ANDROID_NOISE_REDUCTION_MODE] = ANDROID_NOISE_REDUCTION_MODE_OFF;
+    m[ANDROID_NOISE_REDUCTION_MODE] = uint8_t(ANDROID_NOISE_REDUCTION_MODE_OFF);
 
-    m[ANDROID_SENSOR_TEST_PATTERN_MODE] = ANDROID_SENSOR_TEST_PATTERN_MODE_OFF;
+    m[ANDROID_SENSOR_TEST_PATTERN_MODE] = int32_t(ANDROID_SENSOR_TEST_PATTERN_MODE_OFF);
 
-    m[ANDROID_REQUEST_FRAME_COUNT] = int32_t(0);
     m[ANDROID_REQUEST_ID] = int32_t(0);
-    m[ANDROID_REQUEST_METADATA_MODE] = ANDROID_REQUEST_METADATA_MODE_FULL;
-    m[ANDROID_REQUEST_TYPE] = ANDROID_REQUEST_TYPE_CAPTURE;
+    m[ANDROID_REQUEST_METADATA_MODE] = uint8_t(ANDROID_REQUEST_METADATA_MODE_FULL);
 
     m[ANDROID_SCALER_CROP_REGION]
         .add<int32_t>(0).add<int32_t>(0)
@@ -498,40 +488,20 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
     m[ANDROID_SENSOR_FRAME_DURATION] = int64_t(mHwCamera->getDefaultSensorFrameDuration());
     m[ANDROID_SENSOR_SENSITIVITY] = int32_t(mHwCamera->getDefaultSensorSensitivity());
 
-    m[ANDROID_STATISTICS_FACE_DETECT_MODE] = ANDROID_STATISTICS_FACE_DETECT_MODE_OFF;
-    m[ANDROID_STATISTICS_SHARPNESS_MAP_MODE] = ANDROID_STATISTICS_SHARPNESS_MAP_MODE_OFF;
-    m[ANDROID_STATISTICS_HOT_PIXEL_MAP_MODE] = ANDROID_STATISTICS_HOT_PIXEL_MAP_MODE_OFF;
-    m[ANDROID_STATISTICS_LENS_SHADING_MAP_MODE] = ANDROID_STATISTICS_LENS_SHADING_MAP_MODE_OFF;
+    m[ANDROID_STATISTICS_FACE_DETECT_MODE] =
+        uint8_t(ANDROID_STATISTICS_FACE_DETECT_MODE_OFF);
+    m[ANDROID_STATISTICS_SHARPNESS_MAP_MODE] =
+        uint8_t(ANDROID_STATISTICS_SHARPNESS_MAP_MODE_OFF);
+    m[ANDROID_STATISTICS_HOT_PIXEL_MAP_MODE] =
+        uint8_t(ANDROID_STATISTICS_HOT_PIXEL_MAP_MODE_OFF);
+    m[ANDROID_STATISTICS_LENS_SHADING_MAP_MODE] =
+        uint8_t(ANDROID_STATISTICS_LENS_SHADING_MAP_MODE_OFF);
 
-    m[ANDROID_BLACK_LEVEL_LOCK] = ANDROID_BLACK_LEVEL_LOCK_OFF;
-    m[ANDROID_DISTORTION_CORRECTION_MODE] = ANDROID_DISTORTION_CORRECTION_MODE_OFF;
+    m[ANDROID_BLACK_LEVEL_LOCK] = uint8_t(ANDROID_BLACK_LEVEL_LOCK_OFF);
+    m[ANDROID_DISTORTION_CORRECTION_MODE] =
+        uint8_t(ANDROID_DISTORTION_CORRECTION_MODE_OFF);
 
     return m;
-}
-
-std::string CameraDevice::getPhysicalId(const int index) {
-    char buf[sizeof(kCameraIdPrefix) + 8];
-    snprintf(buf, sizeof(buf), "%s%d", kCameraIdPrefix, index);
-    return buf;
-}
-
-std::optional<int> CameraDevice::parsePhysicalId(const std::string_view str) {
-    if (str.size() < sizeof(kCameraIdPrefix)) {
-        return FAILURE(std::nullopt);
-    }
-
-    if (memcmp(str.data(), kCameraIdPrefix, sizeof(kCameraIdPrefix) - 1) != 0) {
-        return FAILURE(std::nullopt);
-    }
-
-    int index;
-    const auto r = std::from_chars(&str[sizeof(kCameraIdPrefix) - 1],
-                                   &*str.end(), index, 10);
-    if (r.ec == std::errc()) {
-        return index;
-    } else {
-        return FAILURE(std::nullopt);
-    }
 }
 
 }  // namespace implementation

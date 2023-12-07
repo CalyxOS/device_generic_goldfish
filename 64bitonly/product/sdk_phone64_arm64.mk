@@ -22,6 +22,10 @@ PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
 
+# 1.5G + 8M
+BOARD_SUPER_PARTITION_SIZE := 1619001344
+BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE := 1610612736
+
 #
 # All components inherited here go to system image
 #
@@ -42,6 +46,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
     development/sys-img/images_arm64-v8a_source.prop_template
 
+PRODUCT_PACKAGES += \
+    GoldfishSkinConfig
+
 #
 # All components inherited here go to vendor or vendor_boot image
 #
@@ -52,5 +59,5 @@ $(call inherit-product, device/generic/goldfish/emulator64_arm64/device.mk)
 # Overrides
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_phone64_arm64
-PRODUCT_DEVICE := emulator64_arm64
+PRODUCT_DEVICE := emu64a
 PRODUCT_MODEL := Android SDK built for arm64

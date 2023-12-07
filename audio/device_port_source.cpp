@@ -138,7 +138,7 @@ struct TinyalsaSource : public DevicePortSource {
                 bytesToRead -= writeBufSzBytes;
                 mSentFrames += writeBufSzBytes / mFrameSize;
             } else {
-                ALOGD("TinyalsaSource::%s:%d pcm_read was late delivering "
+                ALOGD("TinyalsaSource::%s:%d pcm_readi was late delivering "
                       "frames, inserting %zu us of silence",
                       __func__, __LINE__,
                       size_t(1000000 * bytesToRead / mFrameSize / mSampleRateHz));
@@ -185,7 +185,14 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
     size_t doRead(void *dst, size_t sz) {
-        return talsa::pcmRead(mPcm.get(), dst, sz) ? sz : 0;
+        const int n = talsa::pcmRead(mPcm.get(), dst, sz, mFrameSize);
+        if (n > 0) {
+            LOG_ALWAYS_FATAL_IF(static_cast<size_t>(n) > sz,
+                                "n=%d sz=%zu mFrameSize=%u", n, sz, mFrameSize);
+            return n;
+        } else {
+            return 0;
+        }
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
