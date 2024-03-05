@@ -50,7 +50,7 @@ EMU_EXTRA_FILES += device/generic/goldfish/data/etc/config.ini
 EMU_EXTRA_FILES += device/generic/goldfish/data/etc/encryptionkey.img
 EMU_EXTRA_FILES += device/generic/goldfish/data/etc/userdata.img
 
-name := emu-extra-linux-system-images-$(FILE_NAME_TAG)
+name := emu-extra-linux-system-images
 
 EMU_EXTRA_TARGET := $(PRODUCT_OUT)/$(name).zip
 
@@ -71,21 +71,21 @@ endif # arm
 $(EMU_EXTRA_TARGET): PRIVATE_PACKAGE_SRC := \
         $(call intermediates-dir-for, PACKAGING, emu_extra_target)
 
-$(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(ADVANCED_FEATURES_FILES) $(EMULATOR_KERNEL_FILE) $(SOONG_ZIP)
+$(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(ADVANCED_FEATURES_FILES) $(EMULATOR_KERNEL_FILE) $(SOONG_ZIP) $(PRODUCT_OUT)/userdata.img
 	@echo "Package: $@"
 	rm -rf $@ $(PRIVATE_PACKAGE_SRC)
+	mkdir -p $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
 	$(foreach f,$(EMU_EXTRA_FILES), cp $(f) $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/$(notdir $(f)) &&) true
 	$(foreach f,$(ADVANCED_FEATURES_FILES), cp $(f) $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/advancedFeatures.ini &&) true
 	cp $(EMULATOR_KERNEL_FILE) $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/${EMULATOR_KERNEL_DIST_NAME}
 	cp -r $(PRODUCT_OUT)/data $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)
-	mkdir -p $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
 	cp $(PRODUCT_OUT)/system/build.prop $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
 	$(SOONG_ZIP) -o $@ -C $(PRIVATE_PACKAGE_SRC) -D $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)
 
 .PHONY: emu_extra_imgs
 emu_extra_imgs: $(EMU_EXTRA_TARGET)
 
-$(call dist-for-goals, emu_extra_imgs, $(EMU_EXTRA_TARGET))
+$(call dist-for-goals-with-filenametag, emu_extra_imgs, $(EMU_EXTRA_TARGET))
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
 endif

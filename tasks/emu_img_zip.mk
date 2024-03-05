@@ -72,9 +72,9 @@ endif
 endif
 
 ifeq ($(CALYX_BUILD),)
-name := sdk-repo-linux-system-images-$(FILE_NAME_TAG)
+name := sdk-repo-linux-system-images
 else
-name := calyxos-emulator-system-images-$(TARGET_ARCH)-$(FILE_NAME_TAG)
+name := calyxos-emulator-system-images-$(TARGET_ARCH)
 endif
 
 INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
@@ -105,7 +105,7 @@ $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES) $(FINAL_
 .PHONY: emu_img_zip
 emu_img_zip: $(INTERNAL_EMULATOR_PACKAGE_TARGET)
 
-INTERNAL_EMULATOR_KERNEL_TARGET := $(PRODUCT_OUT)/emu-gki-$(TARGET_KERNEL_USE)-$(FILE_NAME_TAG).zip
+INTERNAL_EMULATOR_KERNEL_TARGET := $(PRODUCT_OUT)/emu-gki-$(TARGET_KERNEL_USE).zip
 INTERNAL_GKI_SOURCE := $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/GKI-$(TARGET_KERNEL_USE)
 $(INTERNAL_EMULATOR_KERNEL_TARGET): $(INSTALLED_QEMU_RAMDISKIMAGE) $(EMULATOR_KERNEL_FILE)
 	@echo "Package: $@"
@@ -117,6 +117,6 @@ $(INTERNAL_EMULATOR_KERNEL_TARGET): $(INSTALLED_QEMU_RAMDISKIMAGE) $(EMULATOR_KE
 .PHONY: emu_kernel_zip
 emu_kernel_zip: $(INTERNAL_EMULATOR_KERNEL_TARGET)
 
-$(call dist-for-goals, emu_kernel_zip, $(INTERNAL_EMULATOR_KERNEL_TARGET))
+$(call dist-for-goals-with-filenametag, emu_kernel_zip, $(INTERNAL_EMULATOR_KERNEL_TARGET))
 endif
 endif
