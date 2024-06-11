@@ -12,6 +12,7 @@ hw.gps=yes
 hw.gpu.enabled=yes
 hw.keyboard=yes
 hw.lcd.density=240
+hw.cpu.ncore = 4
 hw.mainKeys=no
 hw.ramSize=4096
 hw.sensors.orientation=yes

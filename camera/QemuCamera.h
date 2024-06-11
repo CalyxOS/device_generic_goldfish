@@ -54,6 +54,7 @@ struct QemuCamera : public HwCamera {
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) override;
 
     // metadata
+    uint32_t getAvailableCapabilitiesBitmap() const override;
     Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const override;
     Span<const Rect<uint16_t>> getAvailableThumbnailSizes() const override;
     bool isBackFacing() const override;
@@ -63,6 +64,7 @@ struct QemuCamera : public HwCamera {
     Span<const Rect<uint16_t>> getSupportedResolutions() const override;
     int64_t getMinFrameDurationNs() const override;
     Rect<uint16_t> getSensorSize() const override;
+    uint8_t getSensorColorFilterArrangement() const override;
     std::pair<int32_t, int32_t> getSensorSensitivityRange() const override;
     std::pair<int64_t, int64_t> getSensorExposureTimeRange() const override;
     int64_t getSensorMaxFrameDuration() const override;
@@ -86,6 +88,8 @@ private:
                       std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const;
     bool captureFrameYUV(const StreamInfo& si, CachedStreamBuffer* dst) const;
     bool captureFrameRGBA(const StreamInfo& si, CachedStreamBuffer* dst) const;
+    DelayedStreamBuffer captureFrameRAW16(const StreamInfo& si,
+                                          CachedStreamBuffer* csb) const;
     DelayedStreamBuffer captureFrameJpeg(const StreamInfo& si,
                                          CachedStreamBuffer* csb) const;
     const native_handle_t* captureFrameForCompressing(Rect<uint16_t> dim,

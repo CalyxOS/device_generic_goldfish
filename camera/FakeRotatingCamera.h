@@ -58,6 +58,7 @@ struct FakeRotatingCamera : public HwCamera {
     Span<const Rect<uint16_t>> getSupportedResolutions() const override;
     int64_t getMinFrameDurationNs() const override;
     Rect<uint16_t> getSensorSize() const override;
+    uint8_t getSensorColorFilterArrangement() const override;
     std::pair<int64_t, int64_t> getSensorExposureTimeRange() const override;
     int64_t getSensorMaxFrameDuration() const override;
     std::pair<int32_t, int32_t> getDefaultTargetFpsRange(RequestTemplate) const override;

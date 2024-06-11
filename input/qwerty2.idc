@@ -18,7 +18,7 @@
 touch.deviceType = touchScreen
 touch.orientationAware = 1
 
-keyboard.layout = qwerty
+keyboard.layout = qwerty2
 keyboard.characterMap = qwerty2
 keyboard.orientationAware = 0
 keyboard.builtIn = 1

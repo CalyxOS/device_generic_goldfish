@@ -31,7 +31,7 @@ namespace camera {
 namespace provider {
 namespace implementation {
 namespace {
-constexpr char kCameraIdPrefix[] = "device@1.0/internal/";
+constexpr char kCameraIdPrefix[] = "device@1.1/internal/";
 
 std::string getLogicalCameraId(const int index) {
     char buf[sizeof(kCameraIdPrefix) + 8];

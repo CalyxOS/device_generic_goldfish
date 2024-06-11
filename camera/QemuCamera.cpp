@@ -68,6 +68,39 @@ constexpr float   kDefaultAperture = 4.0;
 
 constexpr int32_t kDefaultJpegQuality = 85;
 
+const float kColorCorrectionGains[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+const camera_metadata_rational_t kRationalZero = {
+    .numerator = 0, .denominator = 128
+};
+const camera_metadata_rational_t kRationalOne = {
+    .numerator = 128, .denominator = 128
+};
+
+const camera_metadata_rational_t kColorCorrectionTransform[9] = {
+    kRationalOne, kRationalZero, kRationalZero,
+    kRationalZero, kRationalOne, kRationalZero,
+    kRationalZero, kRationalZero, kRationalOne
+};
+
+const camera_metadata_rational kNeutralColorPoint[3] = {
+    {1023, 1}, {1023, 1}, {1023, 1}
+};
+
+const double kSensorNoiseProfile[8] = {
+    1.0, .000001, 1.0, .000001, 1.0, .000001, 1.0, .000001
+};
+
+// system/media/camera/docs/docs.html#dynamic_android.statistics.lensShadingMap
+const float kLensShadingMap[] = {
+    1.3, 1.2, 1.15, 1.2, 1.2, 1.2, 1.15, 1.2,
+    1.1, 1.2, 1.2, 1.2, 1.3, 1.2, 1.3, 1.3,
+    1.2, 1.2, 1.25, 1.1, 1.1, 1.1, 1.1, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.2, 1.3, 1.25, 1.2,
+    1.3, 1.2, 1.2, 1.3, 1.2, 1.15, 1.1, 1.2,
+    1.2, 1.1, 1.0, 1.2, 1.3, 1.15, 1.2, 1.3
+};
+
 constexpr BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
     return static_cast<BufferUsage>(static_cast<uint64_t>(a) | static_cast<uint64_t>(b));
 }
@@ -102,6 +135,10 @@ QemuCamera::overrideStreamParams(const PixelFormat format,
     case PixelFormat::YCBCR_420_888:
         return {PixelFormat::YCBCR_420_888, usageOr(usage, kExtraUsage),
                 Dataspace::JFIF, usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
+
+    case PixelFormat::RAW16:
+        return {PixelFormat::RAW16, usageOr(usage, kExtraUsage),
+                Dataspace::SRGB_LINEAR, 4};
 
     case PixelFormat::RGBA_8888:
         return {PixelFormat::RGBA_8888, usageOr(usage, kExtraUsage),
@@ -229,6 +266,10 @@ void QemuCamera::captureFrame(const StreamInfo& si,
         outputBuffers->push_back(csb->finish(captureFrameRGBA(si, csb)));
         break;
 
+    case PixelFormat::RAW16:
+        delayedOutputBuffers->push_back(captureFrameRAW16(si, csb));
+        break;
+
     case PixelFormat::BLOB:
         delayedOutputBuffers->push_back(captureFrameJpeg(si, csb));
         break;
@@ -291,6 +332,40 @@ bool QemuCamera::captureFrameRGBA(const StreamInfo& si,
                                 mExposureComp, cb->getMmapedOffset());
     LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
     return res;
+}
+
+DelayedStreamBuffer QemuCamera::captureFrameRAW16(const StreamInfo& si,
+                                                  CachedStreamBuffer* csb) const {
+    const native_handle_t* const image = captureFrameForCompressing(
+        si.size, PixelFormat::RGBA_8888, V4L2_PIX_FMT_RGB32);
+
+    const Rect<uint16_t> imageSize = si.size;
+    const int64_t frameDurationNs = mFrameDurationNs;
+    CameraMetadata metadata = mCaptureResultMetadata;
+
+    return [csb, image, imageSize, metadata = std::move(metadata),
+            frameDurationNs](const bool ok) -> StreamBuffer {
+        StreamBuffer sb;
+        if (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000)) {
+            void* mem = nullptr;
+            if (GraphicBufferMapper::get().lock(
+                    image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
+                    {imageSize.width, imageSize.height}, &mem) == NO_ERROR) {
+                sb = csb->finish(convertRGBAtoRAW16(imageSize, mem, csb->getBuffer()));
+                LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(image) != NO_ERROR);
+            } else {
+                sb = csb->finish(FAILURE(false));
+            }
+        } else {
+            sb = csb->finish(false);
+        }
+
+        if (image) {
+            GraphicBufferAllocator::get().free(image);
+        }
+
+        return sb;
+    };
 }
 
 DelayedStreamBuffer QemuCamera::captureFrameJpeg(const StreamInfo& si,
@@ -416,12 +491,12 @@ CameraMetadata QemuCamera::applyMetadata(const CameraMetadata& metadata) {
     const camera_metadata_enum_android_control_af_mode_t afMode =
         find_camera_metadata_ro_entry(raw, ANDROID_CONTROL_AF_MODE, &entry) ?
             ANDROID_CONTROL_AF_MODE_OFF :
-            static_cast<camera_metadata_enum_android_control_af_mode_t>(entry.data.i32[0]);
+            static_cast<camera_metadata_enum_android_control_af_mode_t>(entry.data.u8[0]);
 
     const camera_metadata_enum_android_control_af_trigger_t afTrigger =
         find_camera_metadata_ro_entry(raw, ANDROID_CONTROL_AF_TRIGGER, &entry) ?
             ANDROID_CONTROL_AF_TRIGGER_IDLE :
-            static_cast<camera_metadata_enum_android_control_af_trigger_t>(entry.data.i32[0]);
+            static_cast<camera_metadata_enum_android_control_af_trigger_t>(entry.data.u8[0]);
 
     const auto af = mAFStateMachine(afMode, afTrigger);
 
@@ -430,20 +505,29 @@ CameraMetadata QemuCamera::applyMetadata(const CameraMetadata& metadata) {
 
     CameraMetadataMap m = parseCameraMetadataMap(metadata);
 
+    m[ANDROID_COLOR_CORRECTION_GAINS] = kColorCorrectionGains;
+    m[ANDROID_COLOR_CORRECTION_TRANSFORM] = kColorCorrectionTransform;
     m[ANDROID_CONTROL_AE_STATE] = uint8_t(ANDROID_CONTROL_AE_STATE_CONVERGED);
     m[ANDROID_CONTROL_AF_STATE] = uint8_t(af.first);
     m[ANDROID_CONTROL_AWB_STATE] = uint8_t(ANDROID_CONTROL_AWB_STATE_CONVERGED);
     m[ANDROID_FLASH_STATE] = uint8_t(ANDROID_FLASH_STATE_UNAVAILABLE);
     m[ANDROID_LENS_APERTURE] = mAperture;
     m[ANDROID_LENS_FOCUS_DISTANCE] = af.second;
-    m[ANDROID_LENS_STATE] = uint8_t(ANDROID_LENS_STATE_STATIONARY);
+    m[ANDROID_LENS_STATE] = uint8_t(getAfLensState(af.first));
     m[ANDROID_REQUEST_PIPELINE_DEPTH] = uint8_t(4);
     m[ANDROID_SENSOR_FRAME_DURATION] = mFrameDurationNs;
     m[ANDROID_SENSOR_EXPOSURE_TIME] = mSensorExposureDurationNs;
     m[ANDROID_SENSOR_SENSITIVITY] = mSensorSensitivity;
     m[ANDROID_SENSOR_TIMESTAMP] = int64_t(0);
+    m[ANDROID_SENSOR_NEUTRAL_COLOR_POINT] = kNeutralColorPoint;
+    m[ANDROID_SENSOR_NOISE_PROFILE] = kSensorNoiseProfile;
     m[ANDROID_SENSOR_ROLLING_SHUTTER_SKEW] = kMinSensorExposureTimeNs;
     m[ANDROID_STATISTICS_SCENE_FLICKER] = uint8_t(ANDROID_STATISTICS_SCENE_FLICKER_NONE);
+
+    if (!find_camera_metadata_ro_entry(raw, ANDROID_STATISTICS_LENS_SHADING_MAP_MODE, &entry)
+        && (entry.data.u8[0] == ANDROID_STATISTICS_LENS_SHADING_MAP_MODE_ON)) {
+        m[ANDROID_STATISTICS_LENS_SHADING_MAP] = kLensShadingMap;
+    }
 
     std::optional<CameraMetadata> maybeSerialized =
         serializeCameraMetadataMap(m);
@@ -536,10 +620,17 @@ Span<const float> QemuCamera::getAvailableApertures() const {
 
 std::tuple<int32_t, int32_t, int32_t> QemuCamera::getMaxNumOutputStreams() const {
     return {
-        0,  // raw
+        1,  // raw
         2,  // processed
         1,  // jpeg
     };
+}
+
+uint32_t QemuCamera::getAvailableCapabilitiesBitmap() const {
+    return
+        (1U << ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) |
+        (1U << ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS) |
+        (1U << ANDROID_REQUEST_AVAILABLE_CAPABILITIES_RAW);
 }
 
 Span<const PixelFormat> QemuCamera::getSupportedPixelFormats() const {
@@ -547,6 +638,7 @@ Span<const PixelFormat> QemuCamera::getSupportedPixelFormats() const {
         PixelFormat::IMPLEMENTATION_DEFINED,
         PixelFormat::YCBCR_420_888,
         PixelFormat::RGBA_8888,
+        PixelFormat::RAW16,
         PixelFormat::BLOB,
     };
 
@@ -559,6 +651,10 @@ int64_t QemuCamera::getMinFrameDurationNs() const {
 
 Rect<uint16_t> QemuCamera::getSensorSize() const {
     return mParams.sensorSize;
+}
+
+uint8_t QemuCamera::getSensorColorFilterArrangement() const {
+    return ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB;
 }
 
 std::pair<int32_t, int32_t> QemuCamera::getSensorSensitivityRange() const {

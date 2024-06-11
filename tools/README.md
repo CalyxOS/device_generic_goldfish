@@ -33,7 +33,6 @@ and cannot be repeated.
 $OUT/sparse_system.img      system      1
 $OUT/encryptionkey.img      encrypt     4
 $OUT/vendor.img             vendor      5
-$OUT/sparse_userdata.img    userdata    3
 $OUT/cache.img              cache       2
 ```
 

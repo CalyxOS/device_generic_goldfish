@@ -20,6 +20,7 @@ skin.dynamic=no
 
 #main display
 hw.lcd.density=480
+hw.cpu.ncore = 4
 hw.lcd.height=2208
 hw.lcd.width=1768
 

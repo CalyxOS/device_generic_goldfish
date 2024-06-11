@@ -23,4 +23,4 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
     device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu \
-    device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \
+    device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \

@@ -1,4 +1,3 @@
-# qemu-adb-keys service:  Writes host adb key for adbd on boot.
 type qemu_export_property, domain;
 type qemu_export_property_exec, vendor_file_type, exec_type, file_type;
 

@@ -12,6 +12,7 @@ hw.cpu.ncore=4
 hw.gpu.enabled=yes
 hw.keyboard=yes
 hw.lcd.density=320
+hw.cpu.ncore = 4
 hw.mainKeys=no
 hw.ramSize=4096
 hw.sensors.orientation=yes

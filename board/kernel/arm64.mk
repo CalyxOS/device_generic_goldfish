@@ -17,7 +17,7 @@
 # we do NOT support OTA - suppress the build warning
 PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 
-TARGET_KERNEL_USE ?= 6.1
+TARGET_KERNEL_USE ?= 6.6
 KERNEL_ARTIFACTS_PATH := kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64
 VIRTUAL_DEVICE_KERNEL_MODULES_PATH := \
     kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/arm64
@@ -33,7 +33,9 @@ RAMDISK_KERNEL_MODULES := \
     virtio_pci_legacy_dev.ko \
     virtio_pci_modern_dev.ko \
     virtio-rng.ko \
+    vmw_vsock_virtio_transport_common.ko \
     vmw_vsock_virtio_transport.ko \
+    vsock.ko \
 
 BOARD_SYSTEM_KERNEL_MODULES := $(wildcard $(KERNEL_ARTIFACTS_PATH)/*.ko)
 

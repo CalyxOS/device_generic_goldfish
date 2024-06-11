@@ -48,7 +48,6 @@ endif
 
 EMU_EXTRA_FILES += device/generic/goldfish/data/etc/config.ini
 EMU_EXTRA_FILES += device/generic/goldfish/data/etc/encryptionkey.img
-EMU_EXTRA_FILES += device/generic/goldfish/data/etc/userdata.img
 
 name := emu-extra-linux-system-images
 
@@ -71,7 +70,7 @@ endif # arm
 $(EMU_EXTRA_TARGET): PRIVATE_PACKAGE_SRC := \
         $(call intermediates-dir-for, PACKAGING, emu_extra_target)
 
-$(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(ADVANCED_FEATURES_FILES) $(EMULATOR_KERNEL_FILE) $(SOONG_ZIP) $(PRODUCT_OUT)/userdata.img
+$(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(ADVANCED_FEATURES_FILES) $(EMULATOR_KERNEL_FILE) $(SOONG_ZIP)
 	@echo "Package: $@"
 	rm -rf $@ $(PRIVATE_PACKAGE_SRC)
 	mkdir -p $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
