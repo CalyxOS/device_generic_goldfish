@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2012 The Android Open Source Project
+# Copyright (C) 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,22 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# This file is included by other product makefiles to add all the
-# emulator-related modules to PRODUCT_PACKAGES.
-#
-
-$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_vendor.mk)
-ifneq ($(EMULATOR_DISABLE_RADIO),true)
+# the common file for phone.mk (AOSP) and gphone.mk (internal)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_system_ext.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_vendor.mk)
-endif
 
-ifeq ($(EMULATOR_DISABLE_RADIO),true)
-DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/tablet/overlay
-else
-DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/phone/overlay
-endif
-
+DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/phone/overlay
 PRODUCT_CHARACTERISTICS := emulator
 
 $(call inherit-product, device/generic/goldfish/product/generic.mk)
+
+PRODUCT_PACKAGES += GoldfishSkinConfig \
+                    GoldfishExtraFeature
+
+$(call inherit-product, device/generic/goldfish/product/phone_overlays.mk)
+
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/phone/overlay/frameworks/base/packages/overlays/GoldfishSkinConfig/readme.txt:$(TARGET_COPY_OUT_DATA)/misc/GoldfishSkinConfig \

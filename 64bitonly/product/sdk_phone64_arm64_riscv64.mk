@@ -14,13 +14,14 @@
 # limitations under the License.
 #
 
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/etc/advancedFeatures.ini.uwb:advancedFeatures.ini \
+# sdk_phone64_arm64 with riscv64 translated
 
-$(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x86_64.mk)
-$(call inherit-product, device/generic/goldfish/product/uwb.mk)
+$(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_arm64.mk)
 
+# TODO(b/303700901): Add riscv64 translation support.
+
+# Overrides
 PRODUCT_BRAND := Android
-PRODUCT_NAME := sdk_phone64_x86_64_uwb
-PRODUCT_DEVICE := emu64x
-PRODUCT_MODEL := Android SDK built for x86_64_uwb
+PRODUCT_NAME := sdk_phone64_arm64_riscv64
+PRODUCT_DEVICE := emu64ar
+PRODUCT_MODEL := Android SDK built for arm64 with riscv64 translated

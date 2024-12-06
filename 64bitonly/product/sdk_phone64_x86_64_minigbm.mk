@@ -1,4 +1,5 @@
-# Copyright (C) 2023 The Android Open Source Project
+#
+# Copyright (C) 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +14,13 @@
 # limitations under the License.
 #
 
-# x86_64 16K emulator specific definitions
-TARGET_CPU_ABI := x86_64
-TARGET_ARCH := x86_64
-TARGET_ARCH_VARIANT := x86_64
-TARGET_2ND_ARCH_VARIANT := x86_64
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/data/etc/advancedFeatures.ini.minigbm:advancedFeatures.ini \
+    device/generic/goldfish/data/etc/config.ini.nexus5:config.ini
 
-TARGET_NATIVE_BRIDGE_ARCH := arm64
-TARGET_NATIVE_BRIDGE_ARCH_VARIANT := armv8-a
-TARGET_NATIVE_BRIDGE_CPU_VARIANT := generic
-TARGET_NATIVE_BRIDGE_ABI := arm64-v8a
+$(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x86_64.mk)
 
-TARGET_BOOTS_16K := true
-
-include device/generic/goldfish/board/BoardConfigCommon.mk
-
-BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
+PRODUCT_BRAND := Android
+PRODUCT_NAME := sdk_phone64_x86_64_minigbm
+PRODUCT_DEVICE := emu64x
+PRODUCT_MODEL := Android SDK built for x86_64_minigbm

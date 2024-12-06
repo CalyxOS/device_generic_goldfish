@@ -14,15 +14,4 @@
 # limitations under the License.
 
 $(call inherit-product, device/generic/goldfish/product/handheld.mk)
-
-$(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_system_ext.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_vendor.mk)
-
-DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/phone/overlay
-PRODUCT_CHARACTERISTICS := emulator
-
-$(call inherit-product, device/generic/goldfish/product/generic.mk)
-
-PRODUCT_PACKAGES += GoldfishSkinConfig \
-                    GoldfishExtraFeature
-
+$(call inherit-product, device/generic/goldfish/product/base_phone.mk)
