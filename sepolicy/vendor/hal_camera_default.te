@@ -6,6 +6,10 @@ hal_client_domain(hal_camera_default, hal_graphics_composer);
 # For camera hal to talk with sensor service
 binder_call(hal_camera_default, sensor_service_server)
 binder_call(sensor_service_server, hal_camera_default)
+
+starting_at_board_api(202504, `
+typeattribute hal_camera_default unconstrained_vsock_violators;
+')
 allow hal_camera_default self:vsock_socket create_socket_perms_no_ioctl;
 
 # camera hal with minigbm

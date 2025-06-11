@@ -1,2 +1,5 @@
+starting_at_board_api(202504, `
+typeattribute hal_sensors_default unconstrained_vsock_violators;
+')
 allow hal_sensors_default self:vsock_socket create_socket_perms_no_ioctl;
 allow hal_sensors_default system_server:binder call;

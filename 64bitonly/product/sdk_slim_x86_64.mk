@@ -33,6 +33,9 @@ $(call inherit-product, device/generic/goldfish/product/slim_handheld.mk)
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
     development/sys-img/images_atd_source.prop_template
 
+PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
+    device/generic/goldfish/64bitonly/product/slim_source.prop_template
+
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_slim_x86_64
 PRODUCT_DEVICE := emu64x

@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+$(call inherit-product, device/generic/goldfish/product/versions.mk)
+
 #
 # This file is to configure vendor/data partitions of emulator-related products
 #
@@ -21,8 +23,9 @@ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvi
 # Enable Scoped Storage related
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
-PRODUCT_SHIPPING_API_LEVEL := 35
+ifneq ($(EMULATOR_VENDOR_NO_MANIFEST_FILE),true)
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.xml
+endif
 
 PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
@@ -68,7 +71,6 @@ PRODUCT_VENDOR_PROPERTIES += \
     debug.stagefright.c2inputsurface=-1 \
     debug.stagefright.ccodec=4 \
     graphics.gpu.profiler.support=false \
-    persist.sys.usb.config="" \
     persist.sys.zram_enabled=1 \
     wifi.direct.interface=p2p-dev-wlan0 \
     wifi.interface=wlan0 \
@@ -112,23 +114,17 @@ PRODUCT_PACKAGES += android.hardware.graphics.allocator-service.ranchu
 endif
 
 ifneq ($(EMULATOR_DISABLE_RADIO),true)
-PRODUCT_PACKAGES += \
-    libcuttlefish-ril-2 \
-    libgoldfish-rild \
-    EmulatorRadioConfig \
-    EmulatorTetheringConfigOverlay
+PRODUCT_PACKAGES += android.hardware.radio-service.ranchu
 
-DEVICE_MANIFEST_FILE += device/generic/goldfish/radio/manifest.radio.xml
-DISABLE_RILD_OEM_HOOK := true
-# For customize cflags for libril share library building by soong.
-$(call soong_config_set,ril,disable_rild_oem_hook,true)
+# NR 5G, LTE, TD-SCDMA, CDMA, EVDO, GSM and WCDMA
+PRODUCT_VENDOR_PROPERTIES += ro.telephony.default_network=33
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/radio/init.system_ext.radio.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.system_ext.radio.rc \
-    device/generic/goldfish/radio/data/apns-conf.xml:$(TARGET_COPY_OUT_VENDOR)/etc/apns/apns-conf.xml \
-    device/generic/goldfish/radio/data/iccprofile_for_sim0.xml:data/misc/modem_simulator/iccprofile_for_sim0.xml \
-    device/generic/goldfish/radio/data/numeric_operator.xml:data/misc/modem_simulator/etc/modem_simulator/files/numeric_operator.xml \
-    device/generic/goldfish/radio/EmulatorRadioConfig/radioconfig.xml:data/misc/emulator/config/radioconfig.xml \
+    device/generic/goldfish/hals/radio/init.system_ext.radio.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.system_ext.radio.rc \
+    device/generic/goldfish/hals/radio/data/apns-conf.xml:$(TARGET_COPY_OUT_VENDOR)/etc/apns/apns-conf.xml \
+    device/generic/goldfish/hals/radio/data/iccprofile_for_sim0.xml:data/misc/modem_simulator/iccprofile_for_sim0.xml \
+    device/generic/goldfish/hals/radio/data/numeric_operator.xml:data/misc/modem_simulator/etc/modem_simulator/files/numeric_operator.xml \
+    device/generic/goldfish/hals/radio/EmulatorRadioConfig/radioconfig.xml:data/misc/emulator/config/radioconfig.xml \
     device/google/cuttlefish/host/commands/modem_simulator/files/iccprofile_for_sim0.xml:data/misc/modem_simulator/iccprofile_for_sim_tel_alaska.xml \
     device/google/cuttlefish/host/commands/modem_simulator/files/iccprofile_for_sim0_for_CtsCarrierApiTestCases.xml:data/misc/modem_simulator/iccprofile_for_carrierapitests.xml \
 
@@ -154,14 +150,15 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
+ifneq ($(EMULATOR_VENDOR_NO_THREADNETWORK), true)
 # Enable Thread Network HAL with simulation RCP
 PRODUCT_PACKAGES += \
     com.android.hardware.threadnetwork-simulation-rcp
+endif
 
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth-service.default \
-    android.hardware.bluetooth.audio-impl \
     bt_vhci_forwarder \
 
 # Bluetooth hardware properties.
@@ -174,6 +171,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml
 
+ifneq ($(EMULATOR_VENDOR_NO_UWB),true)
 # Enable Uwb
 PRODUCT_PACKAGES += \
     com.android.hardware.uwb \
@@ -182,6 +180,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_VENDOR_PROPERTIES += ro.vendor.uwb.dev=/dev/hvc2
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.uwb.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.uwb.xml
+endif
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
 PRODUCT_PACKAGES += android.hardware.gnss-service.ranchu
@@ -196,7 +195,7 @@ PRODUCT_PACKAGES += \
 # as prebuilt_etc. For now soong_namespace causes a build break because the fw
 # refers to our wifi HAL in random places.
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
+    device/generic/goldfish/hals/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
@@ -214,18 +213,7 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.full.prebuilt.xml \
     android.hardware.camera.raw.prebuilt.xml \
 
-ifeq (,$(filter %_arm64,$(TARGET_PRODUCT)))  # TARGET_ARCH is not available here
-CODECS_PERFORMANCE_C2_PROFILE := codecs_performance_c2.xml
-else
-CODECS_PERFORMANCE_C2_PROFILE := codecs_performance_c2_arm64.xml
-endif
-
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/camera/media/profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml \
-    device/generic/goldfish/camera/media/codecs_google_video_default.xml:${TARGET_COPY_OUT_VENDOR}/etc/media_codecs_google_video.xml \
-    device/generic/goldfish/camera/media/codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
-    device/generic/goldfish/camera/media/codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
-    device/generic/goldfish/camera/media/$(CODECS_PERFORMANCE_C2_PROFILE):$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json \
@@ -238,11 +226,15 @@ PRODUCT_PACKAGES += \
     android.hardware.audio@7.1-impl.ranchu \
     android.hardware.audio.effect@7.0-impl \
 
-DEVICE_MANIFEST_FILE += device/generic/goldfish/audio/android.hardware.audio.effects@7.0.xml
+# Bluetooth Audio HAL
+PRODUCT_PACKAGES += \
+    android.hardware.bluetooth.audio-impl \
+
+DEVICE_MANIFEST_FILE += device/generic/goldfish/hals/audio/android.hardware.audio.effects@7.0.xml
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
-    device/generic/goldfish/audio/policy/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
+    device/generic/goldfish/hals/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
+    device/generic/goldfish/hals/audio/policy/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
     frameworks/av/services/audiopolicy/config/bluetooth_audio_policy_configuration_7_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/bluetooth_audio_policy_configuration_7_0.xml \
     frameworks/av/services/audiopolicy/config/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
     frameworks/av/services/audiopolicy/config/audio_policy_volumes.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_volumes.xml \
@@ -254,7 +246,6 @@ endif
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
     mac80211_create_radios \
-    dhcpclient \
     hostapd \
     wpa_supplicant \
 
@@ -271,7 +262,6 @@ PRODUCT_PACKAGES += \
     android.hardware.lights-service.example \
     com.android.hardware.neuralnetworks \
     com.android.hardware.power \
-    com.android.hardware.rebootescrow \
     com.android.hardware.thermal \
     com.android.hardware.vibrator
 
@@ -280,6 +270,27 @@ ifneq ($(PRODUCT_IS_ATV_SDK),true)
     PRODUCT_PACKAGES += \
         android.hardware.identity-service.example
 endif
+
+ifneq ($(EMULATOR_VENDOR_NO_REBOOT_ESCROW),true)
+PRODUCT_PACKAGES += \
+    com.android.hardware.rebootescrow
+endif
+
+ifeq (,$(filter %_arm64,$(TARGET_PRODUCT)))  # TARGET_ARCH is not available here
+CODECS_PERFORMANCE_C2_PROFILE := codecs_performance_c2.xml
+else
+CODECS_PERFORMANCE_C2_PROFILE := codecs_performance_c2_arm64.xml
+endif
+
+PRODUCT_COPY_FILES += \
+    frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_audio.xml \
+    frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_telephony.xml \
+    device/generic/goldfish/codecs/media/profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml \
+    device/generic/goldfish/codecs/media/codecs_google_video_default.xml:${TARGET_COPY_OUT_VENDOR}/etc/media_codecs_google_video.xml \
+    device/generic/goldfish/codecs/media/codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
+    device/generic/goldfish/codecs/media/codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
+    device/generic/goldfish/codecs/media/$(CODECS_PERFORMANCE_C2_PROFILE):$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
+
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/empty_data_disk:data/empty_data_disk \
@@ -318,8 +329,6 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml \
     frameworks/native/data/etc/android.hardware.wifi.passpoint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.passpoint.xml \
     frameworks/native/data/etc/android.hardware.wifi.direct.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.direct.xml \
-    frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_audio.xml \
-    frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_telephony.xml \
     frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
     frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
     frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \

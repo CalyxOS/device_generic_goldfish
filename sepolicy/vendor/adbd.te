@@ -1,3 +1,6 @@
 set_prop(adbd, ctl_mdnsd_prop);
 
+starting_at_board_api(202504, `
+typeattribute adbd unconstrained_vsock_violators;
+')
 allow adbd self:vsock_socket { create_socket_perms_no_ioctl listen accept };

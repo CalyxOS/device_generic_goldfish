@@ -16,8 +16,6 @@
 
 include device/generic/goldfish/board/kernel/x86_64_16k.mk
 
-PRODUCT_PROPERTY_OVERRIDES += \
-       vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
 
 PRODUCT_COPY_FILES += \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu \

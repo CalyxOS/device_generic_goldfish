@@ -16,9 +16,6 @@
 
 include device/generic/goldfish/board/kernel/arm64_16k.mk
 
-PRODUCT_PROPERTY_OVERRIDES += \
-       vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
-
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
     device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \

@@ -15,7 +15,6 @@
 
 # the common file for phone.mk (AOSP) and gphone.mk (internal)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_system_ext.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_vendor.mk)
 
 DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/phone/overlay
 PRODUCT_CHARACTERISTICS := emulator

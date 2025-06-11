@@ -1,3 +1,6 @@
+starting_at_board_api(202504, `
+typeattribute platform_app unconstrained_vsock_violators;
+')
 allow platform_app self:vsock_socket create_socket_perms_no_ioctl;
 allow platform_app hal_graphics_allocator_default:vsock_socket { read write getattr };
 set_prop(platform_app, radio_control_prop);

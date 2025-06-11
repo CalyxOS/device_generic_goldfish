@@ -4,4 +4,8 @@ allow hal_graphics_allocator_default gpu_device:dir search;
 allow hal_graphics_allocator_default gpu_device:chr_file { ioctl open read write map rw_file_perms };
 allow hal_graphics_allocator_default dumpstate:fd use;
 allow hal_graphics_allocator_default dumpstate:fifo_file write;
+
+starting_at_board_api(202504, `
+typeattribute hal_graphics_allocator_default unconstrained_vsock_violators;
+')
 allow hal_graphics_allocator_default self:vsock_socket create_socket_perms_no_ioctl;

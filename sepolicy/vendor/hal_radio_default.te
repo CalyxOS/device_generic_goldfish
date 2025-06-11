@@ -1,0 +1,14 @@
+get_prop(rild, vendor_net_eth0_prop);
+get_prop(rild, vendor_net_radio0_prop);
+
+allow hal_radio_default self:{ udp_socket } { create_socket_perms getattr };
+
+allowxperm rild self:udp_socket ioctl { SIOCGIFINDEX
+                                        SIOCGIFFLAGS SIOCSIFFLAGS
+                                        SIOCSIFADDR SIOCSIFNETMASK
+                                        SIOCGIFHWADDR };
+
+starting_at_board_api(202504, `
+typeattribute hal_radio_default unconstrained_vsock_violators;
+')
+allow hal_radio_default self:vsock_socket { create_socket_perms_no_ioctl getattr };

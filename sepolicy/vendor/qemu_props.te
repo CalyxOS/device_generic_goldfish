@@ -8,6 +8,9 @@ set_prop(qemu_props, qemu_hw_prop)
 set_prop(qemu_props, qemu_sf_lcd_density_prop)
 set_prop(qemu_props, vendor_qemu_prop)
 set_prop(qemu_props, vendor_net_share_prop)
+starting_at_board_api(202504, `
+typeattribute qemu_props unconstrained_vsock_violators;
+')
 # TODO(b/79502552): Invalid property access from emulator vendor
 allow qemu_props self:vsock_socket create_socket_perms_no_ioctl;
 allow qemu_props sysfs:dir read;

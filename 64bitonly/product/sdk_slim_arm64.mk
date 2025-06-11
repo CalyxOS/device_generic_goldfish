@@ -30,7 +30,7 @@ BOARD_SUPER_PARTITION_SIZE := $(shell expr $(BOARD_EMULATOR_DYNAMIC_PARTITIONS_S
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
 
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
-    development/sys-img/images_atd_source.prop_template
+    device/generic/goldfish/64bitonly/product/slim_source.prop_template
 
 # this must go first - overwrites the goldfish handheld_core_hardware.xml
 $(call inherit-product, device/generic/goldfish/slim/vendor.mk)

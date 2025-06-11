@@ -262,7 +262,7 @@ wifi_error Interface::getPacketFilterCapabilities(u32* version,
     if (version == nullptr || maxLength == nullptr) {
         return WIFI_ERROR_INVALID_ARGS;
     }
-    *version = 4;
+    *version = 6000;
     *maxLength = kApfRamSize;
     return WIFI_SUCCESS;
 }

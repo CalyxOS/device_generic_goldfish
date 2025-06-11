@@ -28,7 +28,7 @@ BOARD_SUPER_PARTITION_SIZE := $(shell expr $(BOARD_EMULATOR_DYNAMIC_PARTITIONS_S
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
 
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
-    development/sys-img/images_arm64-v8a_source.prop_template
+    device/generic/goldfish/64bitonly/product/phone_source.prop_template
 
 $(call inherit-product, device/generic/goldfish/board/emu64a16k/details.mk)
 $(call inherit-product, device/generic/goldfish/product/phone.mk)

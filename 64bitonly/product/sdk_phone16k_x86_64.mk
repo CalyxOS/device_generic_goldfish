@@ -29,7 +29,7 @@ PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
 endif
 
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
-    development/sys-img/images_x86_64_source.prop_template
+    device/generic/goldfish/64bitonly/product/phone_source.prop_template
 
 $(call inherit-product, device/generic/goldfish/board/emu64x16k/details.mk)
 $(call inherit-product, device/generic/goldfish/product/phone.mk)

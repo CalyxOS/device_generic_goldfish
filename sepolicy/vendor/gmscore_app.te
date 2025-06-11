@@ -1,3 +1,7 @@
 # b/149481633: dontaudit directory traversal
 dontaudit gmscore_app varrun_file:dir search;
+
+starting_at_board_api(202504, `
+typeattribute gmscore_app unconstrained_vsock_violators;
+')
 allow gmscore_app self:vsock_socket create_socket_perms_no_ioctl;

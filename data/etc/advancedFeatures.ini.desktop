@@ -31,3 +31,4 @@ VirtioSndCard = on
 DeviceKeyboardHasAssistKey = on
 VirtioTablet = on
 Uwb = on
+VulkanVirtualQueue = on

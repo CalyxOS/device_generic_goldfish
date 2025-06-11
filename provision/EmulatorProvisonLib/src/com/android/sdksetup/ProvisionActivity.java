@@ -22,6 +22,7 @@ import android.app.StatusBarManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.input.InputManager;
 import android.hardware.input.InputManagerGlobal;
 import android.hardware.input.KeyboardLayout;
 import android.location.LocationManager;
@@ -101,7 +102,7 @@ public abstract class ProvisionActivity extends Activity {
 
     protected void doProvision() {
         provisionWifi("AndroidWifi");
-        provisionKeyboard("qwerty2");
+        provisionKeyboard("qwerty2", SystemProperties.get("vendor.qemu.keyboard_layout"));
         provisionDisplay();
         provisionTelephony();
         provisionLocation();
@@ -139,13 +140,38 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     // Set physical keyboard layout based on the system property set by emulator host.
-    protected void provisionKeyboard(final String deviceName) {
-        Settings.Secure.putInt(getContentResolver(), Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
-
-        final String layoutName = SystemProperties.get("vendor.qemu.keyboard_layout");
+    protected void provisionKeyboard(final String deviceName, final String layoutName) {
         final InputDevice device = getKeyboardDevice(deviceName);
         if (device != null && !layoutName.isEmpty()) {
             setKeyboardLayout(device, layoutName);
+        }
+    }
+
+    protected InputDevice getKeyboardDevice(final String keyboardDeviceName) {
+        final int[] deviceIds = InputDevice.getDeviceIds();
+
+        for (int deviceId : deviceIds) {
+            InputDevice inputDevice = InputDevice.getDevice(deviceId);
+            if (inputDevice != null
+                    && inputDevice.supportsSource(InputDevice.SOURCE_KEYBOARD)
+                    && inputDevice.getName().equals(keyboardDeviceName)) {
+                return inputDevice;
+            }
+        }
+
+        return null;
+    }
+
+    protected void setKeyboardLayout(final InputDevice keyboardDevice, final String layoutName) {
+        final InputManager im = getApplicationContext().getSystemService(InputManager.class);
+        final KeyboardLayout[] keyboardLayouts = im.getKeyboardLayouts();
+
+        for (KeyboardLayout keyboardLayout : keyboardLayouts) {
+            if (keyboardLayout.getDescriptor().endsWith(layoutName)) {
+                InputManagerGlobal.getInstance().setKeyboardLayoutOverrideForInputDevice(
+                        keyboardDevice.getIdentifier(), keyboardLayout.getDescriptor());
+                return;
+            }
         }
     }
 
@@ -201,11 +227,6 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected void provisionTelephony() {
-        // b/193418404
-        // the following blocks, TODO: find out why and fix it. disable this for now.
-        // TelephonyManager mTelephony = getApplicationContext().getSystemService(TelephonyManager.class);
-        // mTelephony.setPreferredNetworkTypeBitmask(TelephonyManager.NETWORK_TYPE_BITMASK_NR);
-
         provisionMockModem();
     }
 
@@ -222,36 +243,6 @@ public abstract class ProvisionActivity extends Activity {
     protected void provisionAdb() {
         Settings.Global.putInt(getContentResolver(), Settings.Global.ADB_ENABLED, 1);
         Settings.Global.putInt(getContentResolver(), Settings.Global.PACKAGE_VERIFIER_INCLUDE_ADB, 0);
-    }
-
-    protected InputDevice getKeyboardDevice(final String keyboardDeviceName) {
-        final int[] deviceIds = InputDevice.getDeviceIds();
-
-        for (int deviceId : deviceIds) {
-            InputDevice inputDevice = InputDevice.getDevice(deviceId);
-            if (inputDevice != null
-                    && inputDevice.supportsSource(InputDevice.SOURCE_KEYBOARD)
-                    && inputDevice.getName().equals(keyboardDeviceName)) {
-                return inputDevice;
-            }
-        }
-
-        return null;
-    }
-
-    protected void setKeyboardLayout(final InputDevice keyboardDevice, final String layoutName) {
-        final InputManagerGlobal im = InputManagerGlobal.getInstance();
-
-        final KeyboardLayout[] keyboardLayouts =
-                im.getKeyboardLayoutsForInputDevice(keyboardDevice.getIdentifier());
-
-        for (KeyboardLayout keyboardLayout : keyboardLayouts) {
-            if (keyboardLayout.getDescriptor().endsWith(layoutName)) {
-                im.setCurrentKeyboardLayoutForInputDevice(
-                        keyboardDevice.getIdentifier(), keyboardLayout.getDescriptor());
-                return;
-            }
-        }
     }
 
     protected boolean provisionRequired() {

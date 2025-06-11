@@ -1,1 +1,4 @@
+starting_at_board_api(202504, `
+typeattribute hal_audio_default unconstrained_vsock_violators;
+')
 allow hal_audio_default self:vsock_socket create_socket_perms_no_ioctl;
